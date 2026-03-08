@@ -1,17 +1,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <pthread.h>    // added
+#include <pthread.h>
+#include <time.h>  // Added for srand/time
 #include "include/thread_pool.h"
 
 void* square(void* arg)
 {
     int value = *(int*)arg;
     int* result = malloc(sizeof(int));
-    printf("Value: %d started (thread %lu)\n", value, (unsigned long)pthread_self()); // cast added
-    *result = value*value;
+    printf("Value: %d started (thread %lu)\n", value, (unsigned long)pthread_self());
+    *result = value * value;
     sleep(1);  // simulate work
-    printf("Result: %d finished (thread %lu)\n", *result , (unsigned long)pthread_self()); // cast added
+    printf("Result: %d finished (thread %lu)\n", *result, (unsigned long)pthread_self());
 
     return result;
 }
@@ -28,27 +29,41 @@ int main()
         return 1;
     }
 
+    srand(time(NULL));  // Seed random number generator
+
     int value_arr[10];
+    future_t* futures[10];  // Array to store futures
+    int priorities[10];     // Array to store priorities for verification
 
     for (int i = 1; i <= 10; i++) {
-        value_arr[i-1] = i;
-        printf("Submitting task %d\n", i);
+        value_arr[i - 1] = i;
+        int priority = rand() % 10 + 1;  // Generate random priority 1-10
+        priorities[i - 1] = priority;    // Store for later check
+        printf("Submitting task %d with priority %d\n", i, priority);
 
-        future_t* future = thread_pool_submit(&pool, square, &value_arr[i-1]);
-        if(future==NULL)
-        {
-           printf("Task %d rejected (shutdown or full)\n", i); 
+        future_t* future = thread_pool_submit(&pool, square, &value_arr[i - 1], priority);
+        if (future == NULL) {
+            printf("Task %d rejected (shutdown or full)\n", i);
+            priorities[i - 1] = -1;  // Mark as rejected
+            continue;
         }
-
-        int* result = future_get_result(future);
-
-        printf("Result = %d\n", *result);
-
-        free(result);
-        future_destroy(future);
+        futures[i - 1] = future;
     }
 
-    sleep(1);  // allow some tasks to complete
+    // Collect and print results later (after all submissions)
+    printf("\nCollecting results:\n");
+    for (int i = 0; i < 10; i++) {
+        if (priorities[i] == -1) {
+            printf("Task %d was rejected\n", i + 1);
+            continue;
+        }
+        int* result = (int*)future_get_result(futures[i]);
+        printf("Task %d (priority %d): Result = %d\n", i + 1, priorities[i], *result);
+        free(result);
+        future_destroy(futures[i]);
+    }
+
+    sleep(1);  // Allow remaining tasks to complete
 
     printf("\nInitiating shutdown...\n");
     thread_pool_shutdown(&pool);

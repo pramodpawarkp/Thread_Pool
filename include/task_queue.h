@@ -10,6 +10,7 @@ typedef struct
     void* (*function)(void*);
     void* arg;
     future_t* future;
+    int priority;
 } task_t;
 
 typedef struct
@@ -17,8 +18,6 @@ typedef struct
     task_t* tasks;
     int capacity;
     int count;
-    int front;
-    int rear;
 
     pthread_mutex_t mutex;
     pthread_cond_t not_empty;

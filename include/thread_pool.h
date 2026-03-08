@@ -13,6 +13,6 @@ typedef struct
 } thread_pool_t;
 
 int thread_pool_init(thread_pool_t* pool, int num_threads, int queue_capacity);
-future_t* thread_pool_submit(thread_pool_t* pool, void* (*function)(void*), void* arg);
+future_t* thread_pool_submit(thread_pool_t* pool, void* (*function)(void*), void* arg, int priority);
 void thread_pool_shutdown(thread_pool_t* pool);
 #endif

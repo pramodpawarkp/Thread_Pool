@@ -44,13 +44,14 @@ int thread_pool_init(thread_pool_t* pool, int num_threads, int queue_capacity)
     return 0;
 }
 
-future_t* thread_pool_submit(thread_pool_t* pool, void* (*function)(void*), void* arg)
+future_t* thread_pool_submit(thread_pool_t* pool, void* (*function)(void*), void* arg, int priority)
 {
     task_t task;
     future_t* future = future_create();
     task.arg = arg;
     task.function = function;
     task.future = future;
+    task.priority = priority;
 
     if(task_queue_enque(&pool->queue,task,&pool->shutdown)!=0)
     {
