@@ -1,0 +1,7 @@
+# Object files
+*.o
+
+# Executables
+thread_pool_app
+*.out
+*.exe
