@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS = -Wall -Wextra -pthread -I.
 TARGET = thread_pool_app
-SOURCES = main.c src/thread_pool.c src/task_queue.c
+SOURCES = main.c src/thread_pool.c src/task_queue.c src/future.c
 OBJECTS = $(SOURCES:.c=.o)
 
 all: $(TARGET)

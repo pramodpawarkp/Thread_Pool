@@ -12,7 +12,8 @@ static void* worker_thread(void* arg)
             break;  // shutdown and queue empty
         }
 
-        task.function(task.arg);
+       void* result = task.function(task.arg);
+       future_set_result(task.future, result);
     }
 
     return NULL;
@@ -43,13 +44,21 @@ int thread_pool_init(thread_pool_t* pool, int num_threads, int queue_capacity)
     return 0;
 }
 
-int thread_pool_submit(thread_pool_t* pool, void (*function)(void*), void* arg)
+future_t* thread_pool_submit(thread_pool_t* pool, void* (*function)(void*), void* arg)
 {
     task_t task;
+    future_t* future = future_create();
     task.arg = arg;
     task.function = function;
+    task.future = future;
 
-    return task_queue_enque(&pool->queue,task,&pool->shutdown);
+    if(task_queue_enque(&pool->queue,task,&pool->shutdown)!=0)
+    {
+        future_destroy(future);
+        return NULL;
+    }
+
+    return future;
 }
 
 void thread_pool_shutdown(thread_pool_t* pool)

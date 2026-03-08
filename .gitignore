@@ -5,3 +5,12 @@
 thread_pool_app
 *.out
 *.exe
+
+# Temporary save files
+*.save# Object files
+*.o
+
+# Executables
+thread_pool_app
+*.out
+*.exe

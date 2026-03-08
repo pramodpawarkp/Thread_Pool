@@ -4,16 +4,13 @@
 
 int task_queue_init(task_queue_t* queue, int capacity)
 {
-    queue->tasks = malloc(sizeof(task_t)*capacity);
-    if(!queue->tasks)
-    {
-        return -1;
-    }
+    if (!queue || capacity <= 0) return -1;  // Add validation
+    queue->tasks = malloc(sizeof(task_t) * capacity);
+    if (!queue->tasks) return -1;
     queue->capacity = capacity;
     queue->count = 0;
     queue->front = 0;
     queue->rear = 0;
-    queue->count = 0;
 
     pthread_mutex_init(&queue->mutex, NULL);
     pthread_cond_init(&queue->not_empty, NULL);
@@ -23,6 +20,7 @@ int task_queue_init(task_queue_t* queue, int capacity)
 
 int task_queue_destroy(task_queue_t* queue)
 {
+    if (!queue) return -1;  // Add validation
     pthread_mutex_destroy(&queue->mutex);
     pthread_cond_destroy(&queue->not_empty);
     pthread_cond_destroy(&queue->not_full);
@@ -32,31 +30,30 @@ int task_queue_destroy(task_queue_t* queue)
 
 bool is_empty(task_queue_t* queue)
 {
+    if (!queue) return true;  // Add validation
     return queue->count == 0;
 }
 
 bool is_full(task_queue_t* queue)
 {
+    if (!queue) return false;  // Add validation
     return queue->capacity == queue->count;
 }
 
 int task_queue_enque(task_queue_t* queue, task_t task, int* shutdown)
 {
+    if (!queue || !shutdown) return -1;  // Add validation
     pthread_mutex_lock(&queue->mutex);
-    while(is_full(queue) && !(*shutdown))
-    {
-        pthread_cond_wait(&queue->not_full,&queue->mutex);
+    while (is_full(queue) && !(*shutdown)) {
+        pthread_cond_wait(&queue->not_full, &queue->mutex);
     }
-
-    if(*shutdown)
-    {
+    if (*shutdown) {
         pthread_mutex_unlock(&queue->mutex);
+        return -1;  // Fixed: Return immediately on shutdown
     }
-
     queue->tasks[queue->front] = task;
-    queue->front = (queue->front+1) % queue->capacity;
-    queue->count ++;
-
+    queue->front = (queue->front + 1) % queue->capacity;
+    queue->count++;
     pthread_cond_signal(&queue->not_empty);
     pthread_mutex_unlock(&queue->mutex);
     return 0;
@@ -64,25 +61,19 @@ int task_queue_enque(task_queue_t* queue, task_t task, int* shutdown)
 
 int task_queue_dequeue(task_queue_t* queue, task_t* task, int* shutdown)
 {
+    if (!queue || !task || !shutdown) return -1;  // Add validation
     pthread_mutex_lock(&queue->mutex);
-    while(is_empty(queue) && !(*shutdown))
-    {
-        pthread_cond_wait(&queue->not_full,&queue->mutex);
+    while (is_empty(queue) && !(*shutdown)) {
+        pthread_cond_wait(&queue->not_empty, &queue->mutex);  // Fixed: Wait on not_empty
     }
-
-    if(*shutdown  && is_empty(queue))
-    {
+    if (*shutdown && is_empty(queue)) {
         pthread_mutex_unlock(&queue->mutex);
         return -1;
     }
-
     *task = queue->tasks[queue->rear];
     queue->rear = (queue->rear + 1) % queue->capacity;
     queue->count--;
- 
     pthread_cond_signal(&queue->not_full);
     pthread_mutex_unlock(&queue->mutex);
-
     return 0;
 }
- 

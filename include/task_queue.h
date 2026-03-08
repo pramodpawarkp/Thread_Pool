@@ -3,11 +3,13 @@
 
 #include <pthread.h>
 #include <stdbool.h>
+#include "future.h"
 
 typedef struct 
 {
-    void (*function)(void*);
+    void* (*function)(void*);
     void* arg;
+    future_t* future;
 } task_t;
 
 typedef struct
